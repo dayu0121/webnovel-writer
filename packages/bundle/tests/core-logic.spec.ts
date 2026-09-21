@@ -82,7 +82,8 @@ describe('paths 当前书路径解析', () => {
   })
 
   it('绝对路径:直接放行由门禁再判', () => {
-    const r = resolveToBookPath(rootOf, 'D:/repo/书仓/甲/大纲/骨架.md')
+    const absolute = process.platform === 'win32' ? 'D:/repo/书仓/甲/大纲/骨架.md' : '/repo/书仓/甲/大纲/骨架.md'
+    const r = resolveToBookPath(rootOf, absolute)
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.path).toContain('大纲/骨架.md')
   })
