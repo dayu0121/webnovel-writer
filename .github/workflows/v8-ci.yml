@@ -13,6 +13,7 @@ jobs:
   quality:
     name: v8-quality-${{ matrix.node }}
     runs-on: windows-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +33,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:public
       - run: pnpm check:version
+      - run: pnpm audit --audit-level=high
       - run: pnpm lint
       - run: pnpm test:release
       - run: pnpm test
@@ -44,6 +46,7 @@ jobs:
   portability:
     name: v8-linux-observation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

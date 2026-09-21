@@ -14,6 +14,15 @@ export function releaseVersion(directory = root, tag) {
   if (tag) assert.equal(tag, expectedTag, 'Release tag must match the package version')
   const changelog = fs.readFileSync(path.join(directory, 'CHANGELOG.md'), 'utf8')
   assert.ok(changelog.includes(`## [${bundle.version}]`), 'Missing versioned changelog entry')
+  for (const file of ['README.md', 'packages/bundle/README.md', 'docs/user/install.md', 'docs/user/upgrade-backup.md']) {
+    const text = fs.readFileSync(path.join(directory, file), 'utf8')
+    for (const match of text.matchAll(/linfengqaqtat-dsh-scriptor-([\d][\w.-]*)\.tgz/g)) {
+      assert.equal(match[1], bundle.version, `Stale installation example in ${file}`)
+    }
+    for (const match of text.matchAll(/releases\/tag\/scriptor-v([\d][\w.-]*)/g)) {
+      assert.equal(match[1], bundle.version, `Stale download link in ${file}`)
+    }
+  }
   return { version: bundle.version, tag: expectedTag, prerelease: bundle.version.includes('-'),
     packageName: bundle.name, filename: `linfengqaqtat-dsh-scriptor-${bundle.version}.tgz` }
 }
