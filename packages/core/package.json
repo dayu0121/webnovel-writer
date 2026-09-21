@@ -1,0 +1,34 @@
+{
+  "name": "@webnovel/core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./retrieval-policy": "./src/retrieval/policy.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest --root ../.. run packages/core/tests"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-user-questions": "0.1.5-rc.2",
+    "@webnovel/drafting": "workspace:*",
+    "@webnovel/polish": "workspace:*",
+    "@webnovel/review": "workspace:*",
+    "typescript": "^5.5.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-user-questions": "0.1.5-rc.2"
+  },
+  "dependencies": {
+    "yaml": "^2.5.0"
+  },
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": "^22.19.0 || ^24.0.0"
+  }
+}

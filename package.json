@@ -1,0 +1,34 @@
+{
+  "name": "webnovel-writer-v8",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0-preview.1",
+  "description": "DSH Scriptor: a long-form fiction writing workspace for DeepSeek Harness",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "test": "vitest run",
+    "build": "pnpm -r --if-present build",
+    "test:dsh-source": "node packages/bundle/scripts/check-dsh-source.mjs",
+    "benchmark:derive": "node scripts/benchmark-derive.mjs",
+    "benchmark:impact": "node scripts/benchmark-impact.mjs",
+    "benchmark:search": "node --experimental-transform-types scripts/benchmark-search.mjs",
+    "lint": "eslint packages scripts/release",
+    "check:public": "node scripts/release/check-public-tree.mjs",
+    "check:version": "node scripts/release/version.mjs --check",
+    "test:release": "node --test scripts/release/tests/*.test.mjs",
+    "release:build": "node scripts/release/build.mjs",
+    "release:smoke": "node scripts/release/install-smoke.mjs"
+  },
+  "engines": {
+    "node": "^22.19.0 || ^24.0.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@types/node": "^22.0.0",
+    "eslint": "9.39.1",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "8.46.1",
+    "vitest": "4.1.11"
+  },
+  "license": "GPL-3.0-only"
+}

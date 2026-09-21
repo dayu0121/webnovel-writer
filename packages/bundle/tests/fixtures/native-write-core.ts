@@ -1,0 +1,6 @@
+export { contractTemplate, documentHash, parseDocument, saveAuthorDocument, serializeDocument } from '@webnovel/core'
+export { normalizeFinding, writeReviewRecord, reviewRecordHashOf, 定位段小节, 单元字段 } from '@webnovel/core'
+export { loadMaterialPackage, rebuildResume } from '@webnovel/core'
+export { loadDraftContext } from '@webnovel/drafting'
+export { computeReview } from '@webnovel/review'
+export { makeFixtureBook } from '../../../core/tests/helpers/fixture-book'

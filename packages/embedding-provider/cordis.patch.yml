@@ -1,0 +1,3 @@
+- insert:
+    - id: webnovel-embeddings
+      name: '@webnovel/embedding-provider'

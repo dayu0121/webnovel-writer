@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用交流
+    url: https://github.com/lingfengQAQ/webnovel-writer/discussions
+    about: 使用问题和创作交流请到 Discussions。
+  - name: 私密安全报告
+    url: https://github.com/lingfengQAQ/webnovel-writer/security/advisories/new
+    about: 安全漏洞请私下报告，不要公开秘密值或私人作品。

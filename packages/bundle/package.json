@@ -1,0 +1,122 @@
+{
+  "name": "@linfengqaqtat/dsh-scriptor",
+  "version": "0.1.0-preview.1",
+  "private": true,
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-chat"
+      ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/bundle.mjs",
+    "start:local": "node scripts/start-local.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest --root ../.. run packages/bundle/tests",
+    "dump-config-check": "node scripts/dump-config-check.mjs",
+    "pack-check": "node scripts/pack-check.mjs"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-atomic-write": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-credentials": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-credentials-local": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-settings-file": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar-right": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
+    "@deepseek-ai/cordis": "4.0.2",
+    "@deepseek-ai/cordis-plugin-group": "1.0.2",
+    "@deepseek-ai/cordis-plugin-include": "1.0.7",
+    "@deepseek-ai/cordis-plugin-loader": "1.0.3",
+    "@deepseek-ai/dsh-agent": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-agent-loop": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-app-boot": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-attachment": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-brand": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-code-runtime": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-fs": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-fs-local": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-fs-observation-policy": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-home-paths": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-invariants": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-launch-environment": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-llm": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-sandbox": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-sandbox-policy": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-scope": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-session": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-session-persistence": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-session-persistence-jsonl": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-settings": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-storage": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-storage-json": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-timeout": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-tool-fs": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-user-approval": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-user-questions": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-util-values": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-workspace": "0.1.5-rc.2",
+    "@types/diff": "7.0.2",
+    "@types/markdown-it": "14.1.2",
+    "@types/react": "18.3.12",
+    "esbuild": "0.28.2",
+    "typescript": "^5.5.0",
+    "yaml": "^2.5.0",
+    "@codemirror/commands": "6.10.4",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/search": "6.7.1",
+    "@codemirror/state": "6.7.1",
+    "@codemirror/view": "6.43.8",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
+    "@webnovel/core": "workspace:*",
+    "@webnovel/drafting": "workspace:*",
+    "@webnovel/review": "workspace:*",
+    "diff": "8.0.3",
+    "dompurify": "3.4.13",
+    "lucide-react": "0.468.0",
+    "markdown-it": "14.2.0",
+    "react": "18.3.1",
+    "@deepseek-ai/dsh-skill-filesystem": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-skill": "0.1.5-rc.2"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "skills/**/*",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/*.txt"
+  ],
+  "description": "Webnovel Writer：DSH 长篇网文写作工作台",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": "^22.19.0 || ^24.0.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-llm": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.1.5-rc.2",
+    "react": "18.3.1"
+  }
+}

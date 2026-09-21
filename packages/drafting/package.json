@@ -1,0 +1,24 @@
+{
+  "name": "@webnovel/drafting",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest --root ../.. run packages/drafting/tests"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@webnovel/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": "^22.19.0 || ^24.0.0"
+  }
+}

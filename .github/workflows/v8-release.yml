@@ -1,0 +1,56 @@
+name: v8 Release
+on:
+  push:
+    tags: ['scriptor-v*']
+permissions:
+  contents: read
+concurrency:
+  group: v8-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Tag belongs to accepted public v8
+        shell: bash
+        run: git merge-base --is-ancestor HEAD origin/v8
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.15.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:version
+      - run: pnpm lint
+      - run: pnpm test:release
+      - run: pnpm test
+      - run: pnpm -r --workspace-concurrency=1 test
+      - run: pnpm release:build -- --out .tmp/release
+      - name: Install the exact release assets into a clean host
+        run: |
+          $mainPackage = Get-ChildItem .tmp/release/linfengqaqtat-dsh-scriptor-*.tgz | Select-Object -ExpandProperty FullName
+          $embeddingPackage = Get-ChildItem .tmp/release/webnovel-embedding-provider-*.tgz | Select-Object -ExpandProperty FullName
+          pnpm release:smoke -- $mainPackage $embeddingPackage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Create a draft; never replace an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:RELEASE_TAG *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'Release already exists; inspect it without overwriting its assets.' }
+          $manifest = Get-Content .tmp/release/release-manifest.json -Raw | ConvertFrom-Json
+          $releaseArgs = @('release', 'create', $env:RELEASE_TAG, '--verify-tag', '--draft', '--latest=false', '--title', "DSH Scriptor · v8 · $($manifest.version)", '--notes-file', '.tmp/release/release-notes.md')
+          if ($manifest.prerelease) { $releaseArgs += '--prerelease' }
+          $releaseArgs += Get-ChildItem .tmp/release -File | Where-Object Name -ne 'release-notes.md' | Select-Object -ExpandProperty FullName
+          & gh @releaseArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

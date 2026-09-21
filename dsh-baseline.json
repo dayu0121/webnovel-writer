@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "source": {
+    "tag": "dsh-v0.1.5-rc.2",
+    "commit": "fb2c4b9e698e30edb738bca4cf0618587db7d203",
+    "version": "0.1.5-rc.2",
+    "sessionFormat": 3,
+    "publishedAt": "2026-09-10T15:09:34Z"
+  },
+  "registry": {
+    "version": "0.1.5-rc.2",
+    "sessionFormat": 3,
+    "checkedAt": "2026-09-11",
+    "sourceVersionPublished": true,
+    "sourceDistTag": "next"
+  }
+}
