@@ -17,7 +17,7 @@
 4. 检查书房入口、技能是否各一份，核对实际书仓状态；先用合成副本试写。
 
 ```powershell
-dsh plugin --profile scriptor add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.2.tgz
+dsh plugin --profile scriptor add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.3.tgz
 dsh --profile scriptor --dump-config
 ```
 

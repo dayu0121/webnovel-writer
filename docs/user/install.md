@@ -21,12 +21,12 @@ Node、pnpm、DSH 预期版本分别属于上述范围、11.7.0、0.1.5-rc.2；G
 
 ## 2. 下载并核对
 
-打开 [本版 Release](https://github.com/lingfengQAQ/webnovel-writer/releases/tag/scriptor-v0.1.0-preview.2)，下载主包 `linfengqaqtat-dsh-scriptor-0.1.0-preview.2.tgz` 和 `SHA256SUMS`。
+打开 [本版 Release](https://github.com/lingfengQAQ/webnovel-writer/releases/tag/scriptor-v0.1.0-preview.3)，下载主包 `linfengqaqtat-dsh-scriptor-0.1.0-preview.3.tgz` 和 `SHA256SUMS`。
 
 把包放入你有写权限的**无空格目录**。下面以 `C:/scriptor-dist` 为例；可换成另一处无空格目录。当前宿主在 Windows 转发安装参数时存在空格路径限制。
 
 ```powershell
-Get-FileHash -Algorithm SHA256 C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.2.tgz
+Get-FileHash -Algorithm SHA256 C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.3.tgz
 ```
 
 把输出与 SHA256SUMS 对应文件行比较，大小写不影响判断；不一致时重新下载并停止安装。GitHub 自动生成的 Source code 压缩包用于开发，不是插件安装包。
@@ -35,7 +35,7 @@ Get-FileHash -Algorithm SHA256 C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0
 
 ```powershell
 dsh --profile scriptor --from-default-profile web --dump-config
-dsh plugin --profile scriptor add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.2.tgz
+dsh plugin --profile scriptor add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.3.tgz
 dsh --profile scriptor --dump-config
 ```
 
