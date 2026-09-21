@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 
 async function download(url) {
-  assert.ok(url.startsWith('https://registry.npmjs.org/') || url.startsWith('https://codeload.github.com/'), 'Unexpected source host')
+  assert.ok(url.startsWith('https://registry.npmjs.org/') || url.startsWith('https://codeload.github.com/') || url.startsWith('https://code.haverbeke.berlin/'), 'Unexpected source host')
   const response = await fetch(url, { signal: AbortSignal.timeout(120000) })
   if (!response.ok) throw new Error(`Source download failed (${response.status}): ${url}`)
   return Buffer.from(await response.arrayBuffer())
@@ -22,6 +22,7 @@ export async function collectDependencySources(root, output) {
   fs.mkdirSync(directory)
   const upstream = new Map()
   const report = []
+  const pinned = JSON.parse(fs.readFileSync(path.join(root, 'scripts/release/upstream-sources.json'), 'utf8'))
   for (const entry of components.values()) {
     const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(entry.name)}/${encodeURIComponent(entry.version)}`, { signal: AbortSignal.timeout(30000) })
     if (!response.ok) throw new Error(`Package source metadata unavailable: ${entry.name}@${entry.version}`)
@@ -37,20 +38,28 @@ export async function collectDependencySources(root, output) {
     fs.writeFileSync(path.join(directory, filename), tarball)
     const repository = typeof metadata.repository === 'string' ? metadata.repository : metadata.repository?.url
     const github = /github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:#.*)?$/.exec(repository ?? '')
+    const haverbeke = /code\.haverbeke\.berlin\/([\w.-]+)\/([\w.-]+?)(?:\.git)?$/.exec(repository ?? '')
+    const override = pinned[`${entry.name}@${entry.version}`]
+    const commit = override?.commit ?? metadata.gitHead
+    assert.match(commit ?? '', /^[a-f0-9]{40}$/, `Pin upstream source for ${entry.name}@${entry.version}`)
     let upstreamFile = null, sourceUrl = null
-    if (github && /^[a-f0-9]{40}$/.test(metadata.gitHead ?? '')) {
-      const key = `${github[1]}-${github[2]}-${metadata.gitHead}`
-      sourceUrl = `https://codeload.github.com/${github[1]}/${github[2]}/tar.gz/${metadata.gitHead}`
+    const upstreamRepo = override?.repository ?? (github ? `${github[1]}/${github[2]}` : null)
+    if (upstreamRepo || haverbeke) {
+      const key = `${upstreamRepo ?? `${haverbeke[1]}/${haverbeke[2]}`}-${commit}`.replaceAll('/', '-')
+      sourceUrl = upstreamRepo ? `https://codeload.github.com/${upstreamRepo}/tar.gz/${commit}`
+        : `https://code.haverbeke.berlin/${haverbeke[1]}/${haverbeke[2]}/archive/${commit}.tar.gz`
       if (!upstream.has(key)) {
         upstreamFile = `${key}.tar.gz`
         fs.writeFileSync(path.join(directory, upstreamFile), await download(sourceUrl))
         upstream.set(key, upstreamFile)
       } else upstreamFile = upstream.get(key)
     }
+    assert.ok(upstreamFile, `No corresponding upstream source for ${entry.name}@${entry.version}`)
     report.push({ name: entry.name, version: entry.version, license: entry.license, repository,
       packageArchive: filename, packageIntegrity: integrity ?? `sha1:${metadata.dist.shasum}`,
-      upstreamArchive: upstreamFile, upstreamUrl: sourceUrl,
-      note: upstreamFile ? 'Pinned upstream source and registry distribution included.' : 'Registry distribution included; inspect its source files and repository reference.' })
+      upstreamArchive: upstreamFile, upstreamUrl: sourceUrl, upstreamCommit: commit,
+      upstreamSha256: createHash('sha256').update(fs.readFileSync(path.join(directory, upstreamFile))).digest('hex'),
+      note: 'Pinned upstream source and registry distribution included.' })
     console.log(`[source] ${entry.name}@${entry.version}: package${upstreamFile ? ' + upstream' : ''}`)
   }
   fs.writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify(report, null, 2) + '\n')

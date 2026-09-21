@@ -181,7 +181,7 @@ describe('可丢弃缓存与真实内容校准', () => {
       const db = new DatabaseSync(path.join(root, CACHE_PATH))
       try {
         // Only the disposable fixture disables SQLite's default shadow-table guard.
-        if (sql.includes('terms_data')) (db as typeof db & { enableDefensive(enabled: boolean): void }).enableDefensive(false)
+        if (sql.includes('terms_data')) (db as typeof db & { enableDefensive?(enabled: boolean): void }).enableDefensive?.(false)
         db.exec(sql)
       } finally { db.close() }
       const rebuilt = success(await searchFinalized(root, { query: '原文线索' }))
