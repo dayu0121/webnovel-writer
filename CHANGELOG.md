@@ -6,14 +6,14 @@
 
 尚无未发布变更。
 
-## [0.1.0-preview.2] — 2026-09-21
+## [0.1.0-preview.3] — 2026-09-21
 
-首个面向公开安装的开发预览版。`scriptor-v0.1.0-preview.1` 标签存在但没有对应 Release：其发行构建在 GitHub Windows runner 上因 `core.autocrlf` 把生成的许可证文本签出为 CRLF 而被干净树检查拒绝。本版仅修正该发行流程，产品代码与 preview.1 相同。
+首个面向公开安装的开发预览版。`scriptor-v0.1.0-preview.1` 与 `scriptor-v0.1.0-preview.2` 标签存在但没有对应 Release：前者的发行构建在 GitHub Windows runner 上因 `core.autocrlf` 把生成的许可证文本签出为 CRLF 而被干净树检查拒绝；后者在同一 runner 上安装隔离 DSH 宿主超过 4 分钟被验收脚本自身的超时中止。本版仅修正发行流程，产品代码与 preview.1 相同。
 
 ### Fixed
 
 - `.gitattributes` 覆盖 `.txt`、`.css`、`LICENSE` 与点文件，生成的第三方许可证文本在任何 Git 行尾设置下与仓库一致。
-- 发行工作流签出前禁用 `core.autocrlf`。
+- 发行工作流签出前禁用 `core.autocrlf`；安装验收对宿主安装步骤放宽到 15 分钟。
 - 死亡租约恢复测试在书仓锁外中断子进程；夹具清理超时放宽到 60 秒。
 - 备份指南补充 Windows 上整目录恢复与只读 Git 对象的处理。
 
@@ -42,6 +42,10 @@
 - API 连接、模型效果、速率限制和账单由所选服务决定；单元测试不代表真实模型质量。
 - 不支持把 Web 工作台未经保护地直接暴露到公网。
 
+## [0.1.0-preview.2] — 2026-09-21
+
+未产生 Release（见 preview.3 说明）。
+
 ## [0.1.0-preview.1] — 2026-09-20
 
-未产生 Release（见 preview.2 说明）。
+未产生 Release（见 preview.3 说明）。

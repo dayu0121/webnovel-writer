@@ -25,7 +25,7 @@ fs.writeFileSync(path.join(host, 'package.json'), JSON.stringify({ name: 'script
 fs.writeFileSync(path.join(root, 'npmrc'), '')
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(npm_|pnpm_)|TOKEN|API_KEY|SECRET|DSH_|AGENTS_HOME|NODE_PATH/i.test(key)))
 Object.assign(env, { DSH_HOME: home, DSH_AGENTS_HOME: path.join(root, 'agents'), DSH_TELEMETRY_DISABLED: '1', NPM_CONFIG_USERCONFIG: path.join(root, 'npmrc') })
-const run = (entry, rest, cwd = workspace) => execFileSync(process.execPath, [entry, ...rest], { cwd, env, encoding: 'utf8', windowsHide: true, timeout: 240000, maxBuffer: 24 * 1024 * 1024 })
+const run = (entry, rest, cwd = workspace, timeout = 240000) => execFileSync(process.execPath, [entry, ...rest], { cwd, env, encoding: 'utf8', windowsHide: true, timeout, maxBuffer: 24 * 1024 * 1024 })
 const npmCandidates = [process.env.NPM_CLI_ENTRY, path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js'), path.resolve(path.dirname(process.execPath), '../lib/node_modules/npm/bin/npm-cli.js')].filter(Boolean)
 const npm = npmCandidates.find(file => fs.existsSync(file))
 assert.ok(npm, 'npm-cli.js was not found; set NPM_CLI_ENTRY to the installed npm CLI')
@@ -33,7 +33,8 @@ const report = { ok: false, node: process.version, packageSha256: createHash('sh
 const reportPath = path.join(root, 'install-report.json')
 const log = (name, output) => { fs.writeFileSync(path.join(root, `${name}.log`), output); console.log(`[install] ${name}`) }
 try {
-  log('install-host', run(npm, ['install', '--prefix', host, '--save-exact', '--no-audit', '--no-fund', '@deepseek-ai/dsh@0.1.5-rc.2', 'pnpm@11.7.0'], host))
+  // Hosted Windows runners with a cold npm cache exceeded 4 minutes for the DSH tree; the network-bound step gets its own bound.
+  log('install-host', run(npm, ['install', '--prefix', host, '--save-exact', '--no-audit', '--no-fund', '@deepseek-ai/dsh@0.1.5-rc.2', 'pnpm@11.7.0'], host, 15 * 60 * 1000))
   const pathKey = Object.keys(env).find(key => key.toLowerCase() === 'path') ?? 'PATH'
   env[pathKey] = path.join(host, 'node_modules/.bin') + path.delimiter + (env[pathKey] ?? '')
   report.hostPackageManager = 'pnpm@11.7.0'
