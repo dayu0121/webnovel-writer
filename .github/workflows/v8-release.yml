@@ -16,6 +16,8 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.ref_name }}
     steps:
+      - name: Check out with repository line endings only
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
