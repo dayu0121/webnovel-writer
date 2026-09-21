@@ -39,7 +39,11 @@ describe('canonicalizePath', () => {
   })
 
   it('stripDevicePrefix:剥 \\\\?\\ 与 \\\\?\\UNC\\ 前缀', () => {
-    if (!IS_WIN) expect(stripDevicePrefix('/a/b')).toBe('/a/b')
+    if (!IS_WIN) {
+      expect(stripDevicePrefix('/a/b')).toBe('/a/b')
+      expect(stripDevicePrefix('\\\\?\\C:\\a\\b')).toBe('\\\\?\\C:\\a\\b')
+      return
+    }
     expect(stripDevicePrefix('\\\\?\\C:\\a\\b')).toBe('C:\\a\\b')
     expect(stripDevicePrefix('\\\\?\\UNC\\srv\\share\\a')).toBe('\\\\srv\\share\\a')
     expect(stripDevicePrefix('C:\\a\\b')).toBe('C:\\a\\b')

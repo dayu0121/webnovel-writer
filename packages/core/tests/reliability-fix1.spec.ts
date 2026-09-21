@@ -137,6 +137,7 @@ describe('F7:提交失败后的可重试恢复', () => {
     fs.mkdirSync(hooksDir, { recursive: true })
     // sh 脚本:直接 exit 1(Windows Git for Windows 自带 sh 执行 hook)
     fs.writeFileSync(nodePath.join(hooksDir, 'pre-commit'), '#!/bin/sh\nexit 1\n', 'utf-8')
+    fs.chmodSync(nodePath.join(hooksDir, 'pre-commit'), 0o755)
   }
   function removeHook(root: string): void {
     fs.rmSync(nodePath.join(root, '.git', 'hooks', 'pre-commit'), { force: true })
