@@ -13,6 +13,8 @@ export default defineConfig({
     // Many integration files spawn Git/Node processes; bound contention on CI.
     maxWorkers: process.env['CI'] ? 2 : 4,
     testTimeout: 15_000,
+    // afterAll fixture removal retries on slow Windows runners can exceed the 10s default.
+    hookTimeout: 60_000,
     env: { TEMP: testTemp, TMP: testTemp, TMPDIR: testTemp },
   },
 });

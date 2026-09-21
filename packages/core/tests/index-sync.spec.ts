@@ -196,9 +196,11 @@ describe('程序维护的向量索引', () => {
     const script = `import { register } from 'node:module'; register(${JSON.stringify(loader)});
       const { syncFinalizedIndex } = await import(${JSON.stringify(module)});
       let calls = 0;
-      const embed = async () => { if (++calls > 1) return new Promise(() => { setInterval(() => {}, 1000) }); return [[1,0]] };
+      // Announce from inside the hanging second request: batch one is committed and no book
+      // lock or acquire guard is held, so killing here orphans only the worker lease.
+      const embed = async () => { if (++calls > 1) { process.stdout.write('CHECKPOINT\\n'); return new Promise(() => { setInterval(() => {}, 1000) }) } return [[1,0]] };
       const provider = { metadata: { provider:'fixture', model:'fixture', dimensions:2, revision:'v1', batchSize:1 }, embed, embedBatch:embed };
-      await syncFinalizedIndex(${JSON.stringify(root)}, { getProvider: () => provider, onProgress: state => { if (state.completedChunks === 1) process.stdout.write('CHECKPOINT\\n') } });`
+      await syncFinalizedIndex(${JSON.stringify(root)}, { getProvider: () => provider });`
     const child = spawn(process.execPath, ['--experimental-transform-types', '--input-type=module', '-e', script], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
     const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
     try {
