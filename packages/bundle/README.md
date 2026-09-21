@@ -9,7 +9,7 @@ DSH 插件 `@linfengqaqtat/dsh-scriptor`，包含工作台、10 个写作技能�
 
 ```powershell
 dsh --profile webnovel --from-default-profile web --dump-config
-dsh plugin --profile webnovel add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.1.tgz
+dsh plugin --profile webnovel add C:/scriptor-dist/linfengqaqtat-dsh-scriptor-0.1.0-preview.2.tgz
 dsh --profile webnovel --host 127.0.0.1 --port 6104 --no-open
 ```
 
@@ -32,6 +32,6 @@ dsh --profile webnovel --dump-config
 
 ## 预览版与公开文档
 
-当前主包 0.1.0-preview.1。完整的安装、配置、首章和备份教程见 [公开使用文档](https://github.com/lingfengQAQ/webnovel-writer/tree/v8/docs/user)。
+当前主包 0.1.0-preview.2。完整的安装、配置、首章和备份教程见 [公开使用文档](https://github.com/lingfengQAQ/webnovel-writer/tree/v8/docs/user)。
 
 第三方组件的原始声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，许可证文本随包放在 licenses/。源码及校验和由对应的 GitHub Release 提供。
