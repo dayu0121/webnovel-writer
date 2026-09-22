@@ -6,7 +6,9 @@ import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import { packageFiles, checkPublishableManifest, checkEmbeddingPackage, checkMetaPackage } from './tar.mjs'
 
-const registry = 'https://registry.npmjs.org/'
+// The official registry is the only release target. The environment override exists so
+// the publish path itself can be exercised against a first-publication fixture.
+const registry = process.env.SCRIPTOR_NPM_REGISTRY ?? 'https://registry.npmjs.org/'
 const mainName = '@linfengqaqtat/dsh-scriptor'
 const embeddingName = 'webnovel-embedding-provider'
 const metaName = '@linfengqaqtat/dsh-scriptor-full'
@@ -77,8 +79,13 @@ export function validateReleaseAssets(directory, expectedTag, expectedCommit) {
 }
 
 // A retry must never overwrite an existing name/version or move latest.
+// npm gives a package's first version latest regardless of --tag and refuses to
+// delete latest, so a preview may hold it only while no stable release exists.
 export function registryStatus(pkg, metadata) {
-  assert.notEqual(metadata?.['dist-tags']?.latest, pkg.version, 'Preview version must not occupy latest')
+  const versions = Object.keys(metadata?.versions ?? {})
+  if (metadata?.['dist-tags']?.latest === pkg.version && pkg.version.includes('-')) {
+    assert.ok(!versions.some(version => !version.includes('-')), `Preview version must not hold latest over a stable release: ${pkg.name}`)
+  }
   const existing = metadata?.versions?.[pkg.version]
   if (!existing) return 'missing'
   assert.equal(existing.dist?.integrity, pkg.integrity, `Registry version has different bytes: ${pkg.name}@${pkg.version}`)
@@ -86,7 +93,10 @@ export function registryStatus(pkg, metadata) {
 }
 
 async function metadataFor(name) {
-  const response = await fetch(`${registry}${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(30000), headers: { accept: 'application/json' } })
+  const url = new URL(encodeURIComponent(name), registry)
+  // npm's CDN can cache a pre-publication 404 for five minutes.
+  url.searchParams.set('scriptor-verify', `${Date.now()}-${Math.random()}`)
+  const response = await fetch(url, { signal: AbortSignal.timeout(30000), headers: { accept: 'application/json', 'cache-control': 'no-cache' } })
   if (response.status === 404) return undefined
   assert.ok(response.ok, `Registry lookup failed (${response.status}): ${name}`)
   return response.json()
@@ -95,7 +105,7 @@ async function metadataFor(name) {
 async function verifyRegistry(packages) {
   for (const pkg of packages) {
     let verified = false
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
       const metadata = await metadataFor(pkg.name)
       if (registryStatus(pkg, metadata) === 'identical' && metadata['dist-tags']?.preview === pkg.version) {
         verified = true
@@ -117,14 +127,16 @@ async function main() {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim()
   const packages = validateReleaseAssets(directory, process.env.RELEASE_TAG, commit)
   if (args.includes('--verify-only')) return verifyRegistry(packages)
-  const npm = [process.env.NPM_CLI_ENTRY, path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js'), path.resolve(path.dirname(process.execPath), '../lib/node_modules/npm/bin/npm-cli.js')].find(file => file && fs.existsSync(file))
+  const npm = [process.env.NPM_CLI_ENTRY, path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js'), path.resolve(path.dirname(process.execPath), '../lib/node_modules/npm/bin/npm-cli.js')].filter(Boolean).find(file => fs.existsSync(file))
   assert.ok(npm, 'npm-cli.js was not found; set NPM_CLI_ENTRY')
   const runNpm = rest => execFileSync(process.execPath, [npm, ...rest], { stdio: 'inherit', windowsHide: true })
   const plan = []
   for (const pkg of packages) {
     plan.push({ pkg, state: registryStatus(pkg, await metadataFor(pkg.name)) })
   }
-  for (const { pkg } of plan) {
+  for (const { pkg, state } of plan) {
+    // npm rejects already-published stable versions even in --dry-run mode.
+    if (state === 'identical') continue
     runNpm(['publish', pkg.filename, '--dry-run', '--ignore-scripts', '--access', 'public', '--tag', 'preview', `--registry=${registry}`])
   }
   if (!args.includes('--publish')) return console.log('[npm] preflight passed; no packages published')
