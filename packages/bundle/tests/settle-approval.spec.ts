@@ -32,7 +32,11 @@ async function setup(ask?: NovelToolsDeps['askFn']) {
     return (await tool.execute(args, AGENT)) as Record<string, unknown> & { ok: boolean }
   }
   const created = await call('novel_create_book', { bookName: '审批书', concept: CONCEPT }) as { bookId: string }
-  return { call, bookId: created.bookId }
+  const packageDir = path.join(ws, '审批书', '草稿区', '定稿准备', '卷01-第一章')
+  fs.mkdirSync(packageDir, { recursive: true })
+  fs.writeFileSync(path.join(packageDir, '清单.json'), JSON.stringify({ schemaVersion: 1 }, null, 2) + '\n', 'utf8')
+  fs.writeFileSync(path.join(packageDir, '正文.md'), '候选正文\n', 'utf8')
+  return { call, bookId: created.bookId, ws }
 }
 
 const KEY = { 卷: 1, 章: 1, 章名: '第一章', summary: 'x' }
@@ -73,5 +77,24 @@ describe('定稿沉淀:作者审批不可由模型自证（裁决 11/14）', () 
     expect(required).not.toContain('裁决记录')
     const r = await call('novel_settle_chapter', { bookId, ...KEY, 裁决记录: '作者说可以' })
     expect(r.ok).toBe(false)
+  })
+  it('批准等待期间待定稿包变化时拒绝入档', async () => {
+    let mutatePackage = (): void => {}
+    let seen: AskRequest | undefined
+    const { call, bookId, ws } = await setup(async (req): Promise<AskResponse> => {
+      seen = req
+      mutatePackage()
+      return { answers: [{ id: '定稿入档', selected: [APPROVE_LABEL] }] }
+    })
+    const packageDir = path.join(ws, '审批书', '草稿区', '定稿准备', '卷01-第一章')
+    fs.mkdirSync(packageDir, { recursive: true })
+    const bodyPath = path.join(packageDir, '正文.md')
+    mutatePackage = () => fs.writeFileSync(bodyPath, '作者等待期间被替换的正文\n', 'utf8')
+
+    const r = await call('novel_settle_chapter', { bookId, ...KEY })
+    expect(seen?.questions[0]?.detail).toMatch(/待定稿包 [0-9a-f]{12}/)
+    expect(r.ok).toBe(false)
+    expect(String(r.reason)).toContain('待定稿包')
+    expect(String(r.reason)).toContain('变化')
   })
 })

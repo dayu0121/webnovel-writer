@@ -212,7 +212,9 @@ export function parseTimelineSections(text: string): Section[] {
 
 function append(existing: string, block: string): string {
   const base = normal(existing)
-  return `${base === '' ? '' : `${base}\n\n`}${block.trim()}\n`
+  const next = block.trim()
+  if (base.includes(next)) return `${base}\n`
+  return `${base === '' ? '' : `${base}\n\n`}${next}\n`
 }
 
 /** 事实变更一段:`## <世界书模块>` / `### <条目名>` / 正文(格式规格 §3.4 事实去向)。 */
@@ -311,7 +313,9 @@ function factOps(bookRoot: string, sections: readonly FactSection[], chapter: Ch
       { ...doc.data.fields },
       parent === null ? initialVersion(generator) : bumpVersion(parent, generator),
     )
-    const appended = `${doc.data.body.replace(/\n+$/, '')}\n\n### 事实@${chapterLabel}\n来源：${source}\n${section.body}\n`
+    const factMarker = `### 事实@${chapterLabel}\n来源：${source}`
+    if (doc.data.body.includes(factMarker)) continue
+    const appended = `${doc.data.body.replace(/\n+$/, '')}\n\n${factMarker}\n${section.body}\n`
     ops.push({ relPath: rel, content: serializeDocument(fields, mode === '更正' ? section.body : appended) })
   }
   return ops

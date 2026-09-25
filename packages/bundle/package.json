@@ -1,6 +1,6 @@
 {
   "name": "@linfengqaqtat/dsh-scriptor",
-  "version": "0.1.0-preview.5",
+  "version": "0.1.0-preview.6",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -106,7 +106,7 @@
     "THIRD_PARTY_NOTICES.md",
     "licenses/*.txt"
   ],
-  "description": "Webnovel Writer：DSH 长篇网文写作工作台",
+  "description": "Webnovel Writer：DSH 番茄短故事写作工作台（保留长篇兼容）",
   "license": "GPL-3.0-only",
   "engines": {
     "node": "^22.19.0 || ^24.0.0"
@@ -125,6 +125,8 @@
     "writing",
     "chinese-novel",
     "creative-writing",
+    "fanqie",
+    "short-story",
     "ai-assistant"
   ],
   "homepage": "https://github.com/lingfengQAQ/webnovel-writer/tree/v8#readme",

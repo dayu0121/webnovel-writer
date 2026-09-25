@@ -4,10 +4,12 @@ import * as path from 'node:path'
 import { parse as parseYaml } from 'yaml'
 
 /**
- * 主控+节点+聚合技能（全生命周期 10 份）。
+ * 主控+节点+聚合技能（长篇 10 份 + 短故事 2 份）。
  * 目录名即 frontmatter name（Agent Skills 规范硬要求：name 必须与父目录名一致）。
  */
 const EXPECTED_SKILLS: ReadonlyArray<{ readonly name: string; readonly 中文名: string }> = [
+  { name: 'story-director', 中文名: '短故事总控' },
+  { name: 'story-review', 中文名: '短故事审读' },
   { name: 'novel-director', 中文名: '工作台总控' },
   { name: 'novel-inspiration', 中文名: '灵感与立项' },
   { name: 'novel-design', 中文名: '定调设计' },
@@ -49,7 +51,7 @@ function readFrontmatter(text: string): Record<string, unknown> {
 }
 
 describe('聚合 skills 体系（渐进式披露与 Subagent 协同）', () => {
-  it('交付 10 份 SKILL.md，文件名一一对应', () => {
+  it('交付 12 份 SKILL.md，文件名一一对应', () => {
     for (const s of EXPECTED_SKILLS) {
       expect(fs.existsSync(skillPath(s.name)), `${s.name}/SKILL.md 应存在`).toBe(true)
     }
@@ -63,6 +65,26 @@ describe('聚合 skills 体系（渐进式披露与 Subagent 协同）', () => {
     expect(onDisk).toEqual([...EXPECTED_SKILLS.map((s) => s.name)].sort())
   })
 
+  it('短故事总控：含真实状态、两个作者门、整篇生产与无伪卷章导出', () => {
+    const text = readSkill('story-director')
+    expect(text).toContain('story_get_status')
+    expect(text).toContain('两个作者门')
+    expect(text).toContain('story_settle')
+    expect(text).toContain('story_write_export')
+    expect(text).toContain('不得把卷、章、章号带入短故事工具')
+    expect(text).toContain('fanqie-short-story@1')
+    expect(text).not.toContain('未配置番茄活动 profile')
+  })
+
+  it('短故事审读：三维发现项 + fingerprint 回写 + 改稿后复审', () => {
+    const text = readSkill('story-review')
+    expect(text).toContain('结构与因果')
+    expect(text).toContain('人物与情绪')
+    expect(text).toContain('连续性与交付')
+    expect(text).toContain('story_record_review')
+    expect(text).toContain('所有模块重新审读')
+    expect(text).toContain('不把活动规则凭空套成永久硬阈值')
+  })
   it('工作台总控：含状态校准第一律 + 六大铁律 + 节点路由 + 子代理交接 + 章内接续', () => {
     const text = readSkill('novel-director')
     expect(text).toContain('novel_get_story_status')

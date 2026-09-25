@@ -1,4 +1,4 @@
-export const skills = ['novel-director', 'novel-inspiration', 'novel-design', 'novel-outline', 'novel-drafting', 'novel-review', 'novel-polish', 'novel-revision', 'novel-settle', 'novel-export']
+export const skills = ['story-director', 'story-review', 'novel-director', 'novel-inspiration', 'novel-design', 'novel-outline', 'novel-drafting', 'novel-review', 'novel-polish', 'novel-revision', 'novel-settle', 'novel-export']
 export const thinScripts = [
   ['skills/novel-review/scripts/确定性检查.mjs', 'runChecksCli'],
   ['skills/novel-design/scripts/影响分析.mjs', 'analyzeImpactCli'],

@@ -48,6 +48,7 @@ const KIND_FALLBACK_DETAIL: Record<IrreversibleKind, string> = {
   记忆入记: '本书记忆候选入记:入记后进入长期记忆,后续检索可见。',
   吃书补偿: '吃书补偿事件:已入档内容与后续设定冲突,以补偿方式收口。',
   规则来源声明: '规则来源声明:声明后作为裁决依据被引用。',
+  导出交付文件: '短故事导出:在指定目录写入 Markdown/TXT 交付文件,不覆盖不同内容。',
 }
 
 const KIND_QUESTION: Record<IrreversibleKind, string> = {
@@ -56,6 +57,7 @@ const KIND_QUESTION: Record<IrreversibleKind, string> = {
   记忆入记: '是否批准将本书记忆候选入记?',
   吃书补偿: '是否批准吃书补偿事件?',
   规则来源声明: '是否确认该规则来源声明?',
+  导出交付文件: '是否批准把短故事定稿导出到指定目录?',
 }
 
 export function buildAskRequest(kind: IrreversibleKind, payload: ArbitrationPayload): AskRequest {

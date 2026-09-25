@@ -5,7 +5,7 @@
 
 import * as path from 'node:path'
 
-const ALLOWED_TOP = new Set(['定稿', '大纲', '世界书', '账本', '本书记忆', '作品契约', '构想'])
+const ALLOWED_TOP = new Set(['定稿', '大纲', '世界书', '账本', '本书记忆', '作品契约', '构想', '故事.json', '作品卡.md', '蓝图', '正文', '检查'])
 const REJECT_TOP = new Set(['知识库', 'profiles', 'books', '草稿区'])
 
 export type CommitPathCheck =
@@ -42,6 +42,9 @@ export function checkCommitRelPath(relPath: string): CommitPathCheck {
   }
   if (top === 'profiles' || p.startsWith('profiles/')) {
     return { ok: false, reason: '配置域路径不得进入书仓提交(不变量 8)' }
+  }
+  if (p === '正文/草稿' || p.startsWith('正文/草稿/')) {
+    return { ok: false, reason: '短故事草稿不得进入定稿提交(不变量 8)' }
   }
   if (REJECT_TOP.has(top) && top !== '知识库' && top !== 'profiles') {
     return { ok: false, reason: `路径「${top}/」不得进入定稿提交(不变量 8)` }

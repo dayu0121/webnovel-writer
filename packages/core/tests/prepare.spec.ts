@@ -110,6 +110,19 @@ function putPending(root: string, body: string, file = '稿1.md'): void {
   )
 }
 
+
+function completeReview(root: string): void {
+  resetChecks()
+  registerDefaultChecks()
+  let record = runReview(root, key).record
+  for (const [name, state] of Object.entries(record?.模块 ?? {})) {
+    if (state.待回写 === true) record = ingestFindings(root, key, name, []).record
+  }
+  for (const finding of record?.问题 ?? []) {
+    if (finding.处置状态 === '待处理') applyRevision(root, key, { 发现项编号: finding.发现项编号, 处置: '作者保留' })
+  }
+}
+
 describe('改稿最小 + 定稿准备', () => {
   it('applyRevision 产出新一版待审稿，原稿降级留档 → derive 定稿准备', () => {
     const root = mkDir('webnovel-revise-')
@@ -188,10 +201,20 @@ describe('改稿最小 + 定稿准备', () => {
     expect(r).toEqual({ ok: false, reason: '须呈报上游' })
   })
 
+  it('preparePack 在当前审读完成前拒绝组包', () => {
+    const root = mkDir('webnovel-pack-unreviewed-')
+    confirmWithHard(root)
+    putPending(root, `巷口风大。${HARD}。`)
+    const r = preparePack(root, key)
+    expect(r.ok).toBe(false)
+    expect(r.reason).toContain('审读')
+    expect(fs.existsSync(path.join(root, '草稿区/定稿准备/卷01-开篇任务'))).toBe(false)
+  })
   it('preparePack writes 8 files, 卷对账 contains 偏离 or 无偏离', () => {
     const root = mkDir('webnovel-pack-')
     confirmWithHard(root)
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     const r = preparePack(root, key)
     expect(r.ok).toBe(true)
     const dir = path.join(root, '草稿区/定稿准备/卷01-开篇任务')
@@ -216,6 +239,7 @@ describe('改稿最小 + 定稿准备', () => {
     writeFileAtomic(root, paths.账本('时间线'), '# 时间线\n\n## 临时发现\n事件：意外线索\n章号：第0001章\n')
     writeFileAtomic(root, paths.计划时间线(1), '# 计划时间线\n\n## 窗口覆盖\n- 计划事件〔已确认〕\n')
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const report = fs.readFileSync(path.join(root, '草稿区/定稿准备/卷01-开篇任务/卷对账.md'), 'utf-8')
     expect(report).toContain('临时发现')
@@ -227,6 +251,7 @@ describe('改稿最小 + 定稿准备', () => {
     const root = mkDir('webnovel-frontmatter-')
     confirmWithHard(root)
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const text = fs.readFileSync(path.join(root, '草稿区/定稿准备/卷01-开篇任务/正文.md'), 'utf-8')
     const doc = parseDocument(text)
@@ -244,6 +269,7 @@ describe('改稿最小 + 定稿准备', () => {
     const root = mkDir('webnovel-hancount-')
     confirmWithHard(root)
     putPending(root, `主角走进城门，发现异响。${HARD}。ABC123`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const doc = parseDocument(
       fs.readFileSync(path.join(root, '草稿区/定稿准备/卷01-开篇任务/正文.md'), 'utf-8'))
@@ -261,6 +287,7 @@ describe('改稿最小 + 定稿准备', () => {
     confirmWithHard(root)
     removeSync(path.join(root, paths.计划时间线(1)))
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const dir = path.join(root, '草稿区/定稿准备/卷01-开篇任务')
     expect(fs.readFileSync(path.join(dir, '卷对账.md'), 'utf-8')).toContain('无法对账')
@@ -290,6 +317,7 @@ describe('改稿最小 + 定稿准备', () => {
     ].join('\n'))
     const outline = fs.readFileSync(path.join(root, paths.卷纲(1)), 'utf-8')
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const report = fs.readFileSync(path.join(root, '草稿区/定稿准备/卷01-开篇任务/卷对账.md'), 'utf-8')
     expect(report).toContain('城门异响')
@@ -310,6 +338,7 @@ describe('改稿最小 + 定稿准备', () => {
     const root = initRepo()
     confirmWithHard(root)
     putPending(root, `巷口风大。${HARD}。`)
+    completeReview(root)
     expect(preparePack(root, key).ok).toBe(true)
     const archived = archiveChapter({
       bookRoot: root,

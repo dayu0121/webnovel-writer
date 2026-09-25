@@ -87,7 +87,7 @@ try {
   log('source-isolation', output)
   assert.equal(JSON.parse(fs.readFileSync(isolatedReport, 'utf8')).ok, true)
   report.checks.sourceDeniedRealLoader = true
-  report.checks.skills = 10
+  report.checks.skills = 12
   if (embedding) {
     const copiedEmbedding = path.join(root, 'embedding.tgz')
     fs.copyFileSync(embedding, copiedEmbedding)

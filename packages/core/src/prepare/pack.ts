@@ -5,7 +5,7 @@
 import { createHash } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import type { ChapterKey } from '../derive/scan'
+import { scanChapter, type ChapterKey } from '../derive/scan'
 import { writeBatchAtomic, type FileOp } from '../repo/atomic'
 import { parseDocument, serializeDocument } from '../repo/frontmatter'
 import { chapterNo, paths } from '../repo/paths'
@@ -115,6 +115,8 @@ export function computePack(bookRoot: string, key: ChapterKey, 沉淀候选?: �
   const pending = findPendingReviewDraft(bookRoot, key)
   if (pendingCount > 1) return { ok: false, dir, reason: `待审稿不唯一:${pendingCount}份` }
   if (pendingCount === 0 || pending === null) return { ok: false, dir, reason: '无待审稿' }
+  const reviewFacts = scanChapter(bookRoot, key)
+  if (!reviewFacts.审核完成 || reviewFacts.审核证据过期) return { ok: false, dir, reason: '当前待审稿的审读未完成或证据已过期' }
 
   if (沉淀候选 !== undefined) {
     try {

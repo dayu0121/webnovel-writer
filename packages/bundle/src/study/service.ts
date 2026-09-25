@@ -4,20 +4,25 @@ import { diffLines } from 'diff'
 import {
   AuthorDocumentError, authorDocumentPath, authorReadOnlyReason, documentHash, saveAuthorDocument, readAuthorSave,
   parseDocument, listChapters, scanChapter, deriveChapterFacts, paths, retryAuthorSaveCommit, withBookWrite,
-  canonicalizePath, isFullyQualifiedPath, findPendingReviewDraft,
+  canonicalizePath, isFullyQualifiedPath, findPendingReviewDraft, listShortStories, deriveShortStoryState,
   type OperationProvenance, type AuthorSaveResult,
 } from '@webnovel/core'
 import { scanBooks } from '../bookshelf'
 import { progressLineOf } from '../status-context'
-import type { ChapterView, FileRef, StudyDocument, StudySave, StudyShelf, TreeEntry } from './types'
+import type { ChapterView, FileRef, StudyBook, StudyDocument, StudySave, StudyShelf, TreeEntry } from './types'
 import type { IndexBook } from '../indexing/manager'
 import { readStoryGraph } from './graph'
 
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
-const ROOT_ORDER = ['作品契约', '构想', '大纲', '世界书', '定稿', '账本', '本书记忆', '草稿区']
+const ROOT_ORDER = ['作品卡.md', '蓝图', '正文', '检查', '作品契约', '构想', '大纲', '世界书', '定稿', '账本', '本书记忆', '草稿区']
 
 export function routeForDocument(ref: FileRef): string {
   if (ref.space === 'shared') return '共享资料更新：只处理相关构想、灵感或作者记忆，不默认复审所有书'
+  if (ref.space.startsWith('story:')) {
+    if (ref.path.startsWith('正文/草稿/')) return '短故事作者改稿：校准整篇审读状态并保留作者原文'
+    if (ref.path.startsWith('检查/')) return '短故事审读与交付检查：按当前 hash 校准，不直接手改过程记录'
+    return '短故事策划：核对故事卡、蓝图和全篇生产状态'
+  }
   if (/^草稿区\/草稿\//.test(ref.path)) return '作者改稿：校准章节状态，保留作者原文，复审受影响项'
   if (/章细纲/.test(ref.path)) return '细纲与备料：核对变更和下游材料影响'
   if (/^(大纲|世界书|作品契约)\//.test(ref.path)) return '定调设计：先分析影响，再处理相关设计与未定稿章节'
@@ -55,28 +60,51 @@ export class StudyService {
     if (!fs.existsSync(this.workspace) || !fs.statSync(this.workspace).isDirectory()) throw new AuthorDocumentError('not-found', '工作范围目录不存在')
   }
 
-  private source(space: string): { root: string; owner: string; bookId?: string } {
+  private source(space: string): { root: string; owner: string; kind: 'shared' | 'book' | 'story'; bookId?: string; storyId?: string } {
     if (space === 'shared') {
       const root = authorDocumentPath(this.workspace, '书房')
       if (!fs.existsSync(root)) throw new AuthorDocumentError('not-found', '当前工作范围尚无共享资料')
-      return { root, owner: '共享资料' }
+      return { root, owner: '共享资料', kind: 'shared' }
+    }
+    if (space.startsWith('story:')) {
+      const storyId = space.slice('story:'.length)
+      const stories = listShortStories(this.workspace).filter(story => story.storyId === storyId)
+      if (stories.length !== 1) throw new AuthorDocumentError('not-found', '短故事不存在或故事 id 不唯一')
+      const story = stories[0]!
+      const root = authorDocumentPath(this.workspace, path.relative(this.workspace, story.root))
+      return { root, owner: story.name, kind: 'story', storyId }
     }
     const books = scanBooks(this.workspace).filter(book => book.bookId && 'book:' + book.bookId === space)
     if (books.length !== 1) throw new AuthorDocumentError('not-found', '书目不存在或书id不唯一')
     const book = books[0]!
     const root = authorDocumentPath(this.workspace, path.relative(this.workspace, book.root))
-    return { root, owner: book.name, bookId: book.bookId }
+    return { root, owner: book.name, kind: 'book', bookId: book.bookId }
   }
 
   shelf(): StudyShelf {
     const scanned = scanBooks(this.workspace)
-    const books = scanned.map(book => ({
+    const books: StudyBook[] = scanned.map(book => ({
       id: book.bookId ? 'book:' + book.bookId : 'invalid:' + book.name,
+      kind: 'book',
       name: book.name,
       progress: book.bookId ? progressLineOf(book.root) : '书目缺少有效书id',
       ...(!book.bookId || scanned.filter(other => other.bookId === book.bookId).length > 1
         ? { error: '书id缺失或重复，请检查作品契约' } : {}),
     }))
+    const stories = listShortStories(this.workspace)
+    for (const story of stories) {
+      const state = deriveShortStoryState(story.root, story.storyId)
+      books.push({
+        id: 'story:' + story.storyId,
+        kind: 'story',
+        name: story.name,
+        platform: story.platform,
+        platformProfile: story.platformProfile,
+        rulePack: story.rulePack,
+        progress: state.ok ? `${state.建议} · 下一步：${state.下一步}` : `状态异常：${state.reason}`,
+        ...(state.ok ? {} : { error: state.reason }),
+      })
+    }
     let shared = false
     let sharedError: string | undefined
     try { shared = fs.statSync(authorDocumentPath(this.workspace, '书房')).isDirectory() } catch (error) {
@@ -88,13 +116,13 @@ export class StudyService {
   indexBook(space: string): IndexBook {
     if (space === 'shared') throw new AuthorDocumentError('invalid-path', '索引只适用于指定书仓')
     const source = this.source(space)
-    if (!source.bookId) throw new AuthorDocumentError('not-found', '书目缺少有效书id')
+    if (source.kind !== 'book' || !source.bookId) throw new AuthorDocumentError('invalid-path', '短故事与共享资料不使用长篇定稿索引')
     return { root: source.root, name: source.owner, bookId: source.bookId, workspace: this.workspace }
   }
 
   graph(space: string) {
     const source = this.source(space)
-    if (!source.bookId) throw new AuthorDocumentError('invalid-path', '图谱只适用于指定作品')
+    if (source.kind !== 'book' || !source.bookId) throw new AuthorDocumentError('invalid-path', '图谱只适用于长篇作品')
     return readStoryGraph({ bookId: source.bookId, bookName: source.owner,
       maxChapter: Math.max(0, ...listChapters(source.root).map(item => item.章)),
       list: relative => this.treeAt(source, { space, path: relative }),
@@ -114,7 +142,7 @@ export class StudyService {
       .filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules')
       .map(entry => {
         const relative = path.posix.join(ref.path, entry.name)
-        const item: TreeEntry = { ref: { space: ref.space, path: relative }, name: entry.name, directory: entry.isDirectory(), draft: ref.space !== 'shared' && relative.startsWith('草稿区') }
+        const item: TreeEntry = { ref: { space: ref.space, path: relative }, name: entry.name, directory: entry.isDirectory(), draft: ref.space !== 'shared' && (relative.startsWith('草稿区') || relative.startsWith('正文/草稿')) }
         try {
           const target = authorDocumentPath(source.root, relative)
           const info = fs.statSync(target)
@@ -140,7 +168,9 @@ export class StudyService {
     const text = textOf(absolutePath)
     const parsed = parseDocument(text)
     const metadata = fieldLabel(text)
-    const readOnly = parsed.ok ? authorReadOnlyReason(ref.path, ref.space === 'shared') : '文档格式异常，只读'
+    const readOnly = ref.space.startsWith('story:')
+      ? '短故事计划、正文与检查由故事工具维护，只读':
+      parsed.ok ? authorReadOnlyReason(ref.path, ref.space === 'shared') : '文档格式异常，只读'
     return {
       ref, owner: source.owner, name: path.basename(ref.path), absolutePath,
       body: parsed.ok ? parsed.data.body : text, hash: documentHash(text),
@@ -152,7 +182,8 @@ export class StudyService {
     if (!isFullyQualifiedPath(absolutePath)) {
       const explicit = /^(?:book:)?([^:]+):(.+)$/.exec(absolutePath)
       if (explicit) {
-        try { return this.read({ space: 'book:' + explicit[1], path: explicit[2]! }) } catch { return null }
+        try { return this.read({ space: 'book:' + explicit[1], path: explicit[2]! }) } catch { /* try story space */ }
+        try { return this.read({ space: 'story:' + explicit[1], path: explicit[2]! }) } catch { return null }
       }
       absolutePath = path.resolve(this.workspace, absolutePath)
     }
@@ -173,6 +204,7 @@ export class StudyService {
     const entries: TreeEntry[] = []
     const scanned = scanBooks(this.workspace)
     const spaces = scanned.filter(book => book.bookId && scanned.filter(other => other.bookId === book.bookId).length === 1).map(book => 'book:' + book.bookId)
+    spaces.push(...listShortStories(this.workspace).map(story => 'story:' + story.storyId))
     try { if (fs.statSync(authorDocumentPath(this.workspace, '书房')).isDirectory()) spaces.push('shared') } catch { /* Report unavailable shared roots in the shelf view. */ }
     const term = query.trim().toLocaleLowerCase()
     const visited = new Set<string>()
@@ -235,7 +267,7 @@ export class StudyService {
 
   chapters(space: string): ChapterView {
     const source = this.source(space)
-    if (!source.bookId) throw new AuthorDocumentError('invalid-path', '共享资料没有章节')
+    if (source.kind !== 'book' || !source.bookId) throw new AuthorDocumentError('invalid-path', '短故事与共享资料没有卷章视图')
     return {
       bookId: source.bookId, bookName: source.owner,
       chapters: listChapters(source.root).map(key => {

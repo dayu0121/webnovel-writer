@@ -24,7 +24,7 @@ import type { ToolExecutionToken, ToolRuntime } from '@deepseek-ai/dsh-tools'
 import { attachFileGateToAgent } from './gates'
 import { scanBooks } from './bookshelf'
 import { attachStatusToAgent, type SystemPromptLike } from './status-context'
-import { canonicalizePath, isFullyQualifiedPath, isInsidePath } from '@webnovel/core'
+import { canonicalizePath, isFullyQualifiedPath, isInsidePath, resolveShortStoryRoot } from '@webnovel/core'
 import { attachPersonaToAgent, type AgentCtxLike } from './persona'
 import { createNovelTools, NOVEL_TOOL_NAMES, type NovelToolDefinition, type ToolExecContext, type AgentLike } from './novel-tools'
 import type { AskFn, EmbeddingProvider } from '@webnovel/core'
@@ -367,6 +367,10 @@ export function apply(ctx: Context) {
       defs: createNovelTools({
         workspaceRoot: (agent) => agentWorkspaceRoot(agent),
         bookRootOfBookId: (bookId, agent) => bookRootOfBookIdFor(bookId, agent),
+        storyRootOfStoryId: (storyId, agent) => {
+          const workspace = agentWorkspaceRoot(agent)
+          return workspace === undefined ? undefined : resolveShortStoryRoot(workspace, storyId)
+        },
         askFn,
         nativeWrite: bridge?.write,
         embeddingProvider: agent => agent === undefined ? undefined : agentCtxGet<{ current(): EmbeddingProvider | undefined }>(agent, 'embeddings')?.current(),

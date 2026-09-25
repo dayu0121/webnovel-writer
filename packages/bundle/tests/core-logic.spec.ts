@@ -94,8 +94,9 @@ describe('status-context 状态注入', () => {
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'webnovel-status-')) 
     const text = renderOverview(ws)
     expect(text).toContain('【工作区总览】')
-    expect(text).toContain('目前还没有书')
-    expect(text).toContain('新建一本书')
+    expect(text).toContain('目前还没有作品')
+    expect(text).toContain('新建番茄短故事')
+    expect(text).not.toContain('新建长篇小说')
   })
 
   it('renderOverview:有书列出书名与书id', () => {

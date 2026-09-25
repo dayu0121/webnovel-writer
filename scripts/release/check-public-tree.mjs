@@ -8,7 +8,7 @@ const rootFiles = new Set(['.gitattributes', '.gitignore', '.npmrc', '.node-vers
 export function checkPublicPath(file) {
   assert.ok(!file.includes('\\') && !file.includes(':') && !file.startsWith('/') && !file.split('/').includes('..'), `Unsafe public path: ${file}`)
   assert.ok(rootFiles.has(file) || /^(packages|scripts\/release|docs\/(user|maintenance)|examples|\.github)\//.test(file)
-    || /^docs\/(development|book-format)\.md$/.test(file) || /^scripts\/(benchmark-(derive|impact|search)|strip-types-loader)\.mjs$/.test(file), `File outside public allowlist: ${file}`)
+    || /^docs\/(development|book-format|short-story-adaptation-assessment)\.md$/.test(file) || /^scripts\/(benchmark-(derive|impact|search)|strip-types-loader)\.mjs$/.test(file), `File outside public allowlist: ${file}`)
   assert.ok(!/(^|\/)(\.trellis|\.credentials[^/]*|session[^/]*\.jsonl|node_modules|\.env(?:\..*)?|\.webnovel)(\/|$)/.test(file), `Private content path: ${file}`)
   assert.notEqual(file, 'packages/bundle/dsh-local.yml', 'Local instance config is private')
 }

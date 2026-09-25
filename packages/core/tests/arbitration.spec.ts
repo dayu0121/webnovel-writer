@@ -19,7 +19,7 @@ import type {
 describe('不可逆清单(插件规格 §6)', () => {
   it('五种不可逆动作都在清单内且能生成提问', () => {
     expect([...IRREVERSIBLE_KINDS]).toEqual([
-      '定稿入档', '世界书条目转正', '记忆入记', '吃书补偿', '规则来源声明',
+      '定稿入档', '世界书条目转正', '记忆入记', '吃书补偿', '规则来源声明', '导出交付文件',
     ])
     for (const kind of IRREVERSIBLE_KINDS) {
       const req = buildAskRequest(kind, { 范围: '卷01/初见', 摘要: '测试' })
@@ -187,7 +187,7 @@ describe('裁决 14:askAuthor 对齐 dsh ctx.userQuestions.ask() 真签名', () 
   })
 
   it('buildAskRequest: 五种不可逆动作的 detail 一律非空', () => {
-    for (const kind of ['定稿入档', '世界书条目转正', '记忆入记', '吃书补偿', '规则来源声明'] as const) {
+    for (const kind of ['定稿入档', '世界书条目转正', '记忆入记', '吃书补偿', '规则来源声明', '导出交付文件'] as const) {
       const q = buildAskRequest(kind, {}).questions[0]!
       expect((q.detail ?? '').trim().length, `${kind}: detail 应非空`).toBeGreaterThan(0)
     }

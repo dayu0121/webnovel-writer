@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, ExternalLink, Network, RefreshCw, Search, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check, CircleCheck, ExternalLink, FileText, Network, RefreshCw, Search, X, ZoomIn, ZoomOut } from 'lucide-react'
 import type { ChapterView, StudyShelf } from '../study/types'
 import { projectStoryGraph, type StoryGraph, type StoryGraphRecord } from '../study/graph-types'
 import type { StudyUI } from './browser'
@@ -61,6 +61,23 @@ function ChapterProgress({ sessionId, space, store, refresh }: ViewProps) {
   </>
 }
 
+function ShortStoryProgress({ sessionId, space, story, store }: { sessionId: string; space: string; story: StudyShelf['books'][number]; store: EditorStore }) {
+  const [position, next = ''] = story.progress.split(' · 下一步：', 2)
+  const steps = ['故事卡准备', '蓝图待确认', '可写', '起草中', '待审', '修订中', '定稿候选', '可交付', '已定稿'] as const
+  const active = Math.max(0, steps.indexOf(position as (typeof steps)[number]))
+  const open = (file: string) => store.open(sessionId, { space, path: file })
+  return <section className="nw-story-board" aria-label={`短故事 ${story.name} 进度`}>
+    <div className="nw-story-ledger"><small>SHORT STORY / {space.replace('story:', '')} · 番茄规则包 v{story.rulePack?.version ?? '—'}</small><h3>{story.name}</h3><p>{next}</p></div>
+    <ol className="nw-story-steps">{steps.map((step, index) => <li key={step} className={index < active ? 'is-done' : index === active ? 'is-current' : ''}>
+      <span>{index < active ? <Check size={13} /> : index === active ? <CircleCheck size={13} /> : index + 1}</span><strong>{step}</strong>
+    </li>)}</ol>
+    <div className="nw-story-actions">
+      <button type="button" onClick={() => void open('作品卡.md')}><FileText size={14} />打开作品卡</button>
+      <button type="button" onClick={() => void open('蓝图/故事蓝图.md')}><FileText size={14} />打开故事蓝图</button>
+    </div>
+    <p className="nw-story-note">短故事以整篇为生产单元，固定遵循 fanqie-short-story@1。审读、修订、交付检查与导出的精确结果由故事工具绑定规则包和文件 hash。</p>
+  </section>
+}
 function layout(nodes: readonly StoryGraphRecord[], edges: readonly { from: string; to: string }[]) {
   const positions = new Map(nodes.map((node, index) => [node.id, {
     x: 440 + Math.cos(index * 2.39996) * (60 + 24 * Math.sqrt(index)),
@@ -182,15 +199,21 @@ function WorkspaceVisual({ sessionId, store }: { sessionId: string; store: Edito
   const books = shelf.value?.books.filter(book => !book.error) ?? []
   const [choice, setChoice] = useState('')
   const [mode, setMode] = useState<'graph' | 'chapters'>('graph')
-  const space = books.some(book => book.id === choice) ? choice : books[0]?.id
+  const defaultBook = books.find(book => book.kind === 'book') ?? books[0]
+  const space = books.some(book => book.id === choice) ? choice : defaultBook?.id
+  const selected = books.find(book => book.id === space)
+  const isStory = selected?.kind === 'story'
+  const title = isStory ? '短故事工作台' : mode === 'graph' ? '时间线关系图谱' : '章节进度'
   return <div className="nw-viz">
-    <header className="nw-viz-header"><div><p>作品视图</p><h2>{mode === 'graph' ? '时间线关系图谱' : '章节进度'}</h2></div>
-      <div className="nw-viz-header-actions"><select aria-label="选择可视化作品" value={space ?? ''} onChange={event => setChoice(event.target.value)}>{books.map(book => <option key={book.id} value={book.id}>{book.name}</option>)}</select>
+    <header className="nw-viz-header"><div><p>作品视图</p><h2>{title}</h2></div>
+      <div className="nw-viz-header-actions"><select aria-label="选择可视化作品" value={space ?? ''} onChange={event => setChoice(event.target.value)}>{books.map(book => <option key={book.id} value={book.id}>{book.kind === 'story' ? '番茄短故事 · ' : '长篇 · '}{book.name}</option>)}</select>
         <button type="button" className="nw-icon" aria-label="刷新作品视图" onClick={() => store.update(sessionId, { refresh: state.refresh + 1 })}><RefreshCw size={16} /></button></div></header>
-    <div className="nw-viz-switch" role="group" aria-label="可视化视图"><button type="button" aria-pressed={mode === 'graph'} onClick={() => setMode('graph')}><Network size={15} />关系图谱</button>
-      <button type="button" aria-pressed={mode === 'chapters'} onClick={() => setMode('chapters')}><BookOpen size={15} />章节进度</button></div>
+    {!isStory ? <div className="nw-viz-switch" role="group" aria-label="可视化视图"><button type="button" aria-pressed={mode === 'graph'} onClick={() => setMode('graph')}><Network size={15} />关系图谱</button>
+      <button type="button" aria-pressed={mode === 'chapters'} onClick={() => setMode('chapters')}><BookOpen size={15} />章节进度</button></div> : null}
     {shelf.error ? <p className="nw-error">{shelf.error}</p> : null}
-    {space ? <div key={space}>{mode === 'graph' ? <RelationshipGraph {...{ sessionId, space, store, refresh: state.refresh }} /> : <ChapterProgress {...{ sessionId, space, store, refresh: state.refresh }} />}</div>
+    {space && selected ? <div key={space}>{isStory
+      ? <ShortStoryProgress sessionId={sessionId} space={space} story={selected} store={store} />
+      : mode === 'graph' ? <RelationshipGraph {...{ sessionId, space, store, refresh: state.refresh }} /> : <ChapterProgress {...{ sessionId, space, store, refresh: state.refresh }} />}</div>
       : <p className="nw-empty">{shelf.loading ? '正在读取作品…' : '当前工作范围暂无作品。'}</p>}
   </div>
 }

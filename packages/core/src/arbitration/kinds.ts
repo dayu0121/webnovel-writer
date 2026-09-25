@@ -8,6 +8,7 @@ export const IRREVERSIBLE_KINDS = [
   '记忆入记',
   '吃书补偿',
   '规则来源声明',
+  '导出交付文件',
 ] as const
 
 export type IrreversibleKind = (typeof IRREVERSIBLE_KINDS)[number]

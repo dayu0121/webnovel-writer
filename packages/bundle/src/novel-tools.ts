@@ -29,6 +29,7 @@ import type { ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 
 import * as fs from 'node:fs'
 import * as nodePath from 'node:path'
+import { createHash } from 'node:crypto'
 import type { ToolOutputDefinition } from '@deepseek-ai/dsh-tools'
 import {
   activeChapterLine,
@@ -100,6 +101,7 @@ import { scanBooks } from './bookshelf'
 import { bookMemoryCatalogText, progressLineOf, renderCurrentBook } from './status-context'
 import type { IndexView } from './indexing/manager'
 import { computeMaterials, type SupplementEdit } from '@webnovel/core'
+import { createShortStoryTools } from './short-story-tools'
 
 /** 窄取工具执行内可见的 Agent 子集（避免全量依赖 dsh-agent）。 */
 export interface AgentLike {
@@ -150,6 +152,7 @@ export interface NovelToolsDeps {
   readonly workspaceRoot: (agent?: AgentLike) => string | undefined
   /** 按会话解析书仓（D10）：agent 的会话 cwd 优先，全局认领兜底。 */
   readonly bookRootOfBookId: (bookId: string, agent?: AgentLike) => string | undefined
+  readonly storyRootOfStoryId?: (storyId: string, agent?: AgentLike) => string | undefined
   readonly askFn?: AskFn
 }
 
@@ -199,6 +202,19 @@ export const NOVEL_TOOL_NAMES: readonly string[] = [
   'novel_record_memory',
   'novel_note_pending',
   'novel_get_book_progress',
+  'story_create',
+  'story_select',
+  'story_get_status',
+  'story_write_plan',
+  'story_confirm_plan',
+  'story_write_draft',
+  'story_review_identity',
+  'story_record_review',
+  'story_apply_revision',
+  'story_prepare_delivery',
+  'story_settle',
+  'story_write_export',
+  'story_compute_export',
 ]
 
 export function createNovelTools(deps: NovelToolsDeps): NovelToolDefinition[] {
@@ -230,7 +246,35 @@ export function createNovelTools(deps: NovelToolsDeps): NovelToolDefinition[] {
     return { ok: true, key: { 卷, 章, 章名 } }
   }
 
+  const settlementPackageHash = (bookRoot: string, key: Pick<ChapterKey, '卷' | '章名'>):
+    { readonly ok: true; readonly hash: string } | { readonly ok: false; readonly reason: string } => {
+    const packageDir = paths.待定稿包目录(key.卷, key.章名)
+    const packageRoot = nodePath.join(bookRoot, packageDir)
+    if (!fs.existsSync(nodePath.join(packageRoot, '清单.json'))) return { ok: false, reason: `待定稿包缺少清单.json:${packageDir}` }
+    const digest = createHash('sha256')
+    const walk = (dir: string): void => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+      for (const entry of entries) {
+        const absolute = nodePath.join(dir, entry.name)
+        if (entry.isSymbolicLink()) throw new Error(`待定稿包含链接，拒绝批准:${nodePath.relative(packageRoot, absolute)}`)
+        if (entry.isDirectory()) walk(absolute)
+        else if (entry.isFile()) {
+          digest.update(nodePath.relative(packageRoot, absolute).split(nodePath.sep).join('/'))
+          digest.update('\0')
+          digest.update(fs.readFileSync(absolute))
+          digest.update('\0')
+        }
+      }
+    }
+    try {
+      walk(packageRoot)
+      return { ok: true, hash: digest.digest('hex') }
+    } catch (error) {
+      return { ok: false, reason: `待定稿包读取失败:${String(error)}` }
+    }
+  }
   const tools: NovelToolDefinition[] = [
+    ...createShortStoryTools(deps),
     {
       name: 'novel_select_book',
       description: '核对作者在对话中指定的小说，返回书id、书名、书仓近况与该书记忆目录快照，供后续调用使用。首次明确选书和作者切书时调用。',
@@ -724,12 +768,23 @@ export function createNovelTools(deps: NovelToolsDeps): NovelToolDefinition[] {
         const keyResult = chapterKeyOf(args)
         if (!keyResult.ok) return keyResult
         const key = keyResult.key
-        const decision = await askAuthor(deps.askFn, '定稿入档', { 范围: `卷${key.卷.toString().padStart(2, '0')}/${key.章名}` }, { agent: sessionContext?.agent, signal: sessionContext?.signal })
+        const packageBefore = settlementPackageHash(bookRoot, key)
+        if (!packageBefore.ok) return packageBefore
+        const decision = await askAuthor(deps.askFn, '定稿入档', {
+          范围: `卷${key.卷.toString().padStart(2, '0')}/${key.章名}`,
+          摘要: `待定稿包 ${packageBefore.hash.slice(0, 12)}`,
+          版本: packageBefore.hash,
+        }, { agent: sessionContext?.agent, signal: sessionContext?.signal })
         if (!decision.ok) return { ok: false, reason: `未获作者批准: ${decision.reason}` }
         if (sessionContext?.signal?.aborted) return { ok: false, reason: '作者裁决已取消（ASK_ABORTED）' }
         // decision.ok 只表示答案有效;退回同样是有效答案,须按 决定 判。
         const 裁决 = decision.决定 === '已批准' ? '已批准' : '已退回'
         return withBookWrite(bookRoot, () => {
+          const packageNow = settlementPackageHash(bookRoot, key)
+          if (!packageNow.ok) return packageNow
+          if (packageNow.hash !== packageBefore.hash) {
+            return { ok: false, reason: `待定稿包在作者批准期间发生变化:${packageBefore.hash.slice(0, 12)}→${packageNow.hash.slice(0, 12)}` }
+          }
           const decisionWrite = writeSettlementDecision(bookRoot, key, 裁决)
           if (裁决 !== '已批准') {
             // 驳回本身必须保留原有语义;清单缺失时无法落裁决,但不能把作者决定

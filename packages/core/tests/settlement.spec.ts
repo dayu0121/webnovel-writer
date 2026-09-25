@@ -184,6 +184,24 @@ describe('定稿沉淀', () => {
     if (!result.ok) expect(result.reason).toMatch(/缺少作者批准/)
   })
 
+  it('非空沉淀在 Git 失败后重跑不重复追加账本事实', () => {
+    const root = mkRoot()
+    initGit(root)
+    const pkg = putPackage(root, { '时间线变更.md': '# 时间线变更\n\n## 城门异响\n事件：发现异常\n' })
+    const hook = path.join(root, '.git', 'hooks', 'pre-commit')
+    fs.writeFileSync(hook, '#!/bin/sh\nexit 1\n', 'utf-8')
+    fs.chmodSync(hook, 0o755)
+    const settlement = { 章节: key, 批准: true, 裁决记录: '作者批准' } as const
+    const failed = archiveChapter({ bookRoot: root, packageDir: pkg, summary: '非空沉淀', settlement })
+    expect(failed.ok).toBe(false)
+    if (!failed.ok) expect(failed.written).toBe(true)
+    expect((fs.readFileSync(path.join(root, '账本/时间线.md'), 'utf-8').match(/## 城门异响/g) ?? []).length).toBe(1)
+
+    fs.rmSync(hook, { force: true })
+    const retry = archiveChapter({ bookRoot: root, packageDir: pkg, summary: '非空沉淀补提交', settlement })
+    expect(retry.ok).toBe(true)
+    expect((fs.readFileSync(path.join(root, '账本/时间线.md'), 'utf-8').match(/## 城门异响/g) ?? []).length).toBe(1)
+  })
   it('空候选无需批准，同内容重复入档幂等放行(F7:无实质变更→git 层回报 written:true,不覆盖不重复提交)', () => {    const root = mkRoot()
     initGit(root)
     const pkg = putPackage(root, {})

@@ -193,7 +193,7 @@ describe('M1:ingestAuthorRevision 原样落盘', () => {
   it('无待审稿 → 拒绝', () => {
     const root = mkBook()
     readyBook(root, BASE)
-    fs.rmSync(path.join(root, '草稿区/草稿/卷01-开篇任务'), { recursive: true, force: true })
+    fs.renameSync(path.join(root, '草稿区/草稿/卷01-开篇任务'), path.join(root, '草稿区/草稿/卷01-开篇任务-撤回'))
     const r = ingestAuthorRevision(root, key, BASE)
     expect(r.ok).toBe(false)
   })

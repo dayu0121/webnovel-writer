@@ -5,6 +5,7 @@ import * as path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import {
   archiveChapter,
+  applyRevision,
   confirmOutline,
   parseDocument,
   serializeDocument,
@@ -14,6 +15,8 @@ import {
   seedMinDesign,
   writeCandidate,
 } from '../src/index'
+
+import { ingestFindings, registerDefaultChecks, resetChecks, runReview } from '@webnovel/review'
 
 const roots: string[] = []
 function mkDir(prefix: string): string {
@@ -33,6 +36,18 @@ function initGit(root: string): void {
 const key = { 卷: 1, 章: 1, 章名: '开篇任务' } as const
 const HARD = '开场必须点名主角现身'
 const PKG = '草稿区/定稿准备/卷01-开篇任务'
+
+function completeReview(root: string): void {
+  resetChecks()
+  registerDefaultChecks()
+  let record = runReview(root, key).record
+  for (const [name, state] of Object.entries(record?.模块 ?? {})) {
+    if (state.待回写 === true) record = ingestFindings(root, key, name, []).record
+  }
+  for (const finding of record?.问题 ?? []) {
+    if (finding.处置状态 === '待处理') applyRevision(root, key, { 发现项编号: finding.发现项编号, 处置: '作者保留' })
+  }
+}
 
 function confirmWithHard(root: string): void {
   seedMinDesign(root)
@@ -62,6 +77,7 @@ function confirmWithHard(root: string): void {
     `---\n角色: 待审稿\n选定: true\n版本: 1\n父版本: null\n生成模块: 写稿\n---\n巷口风大。${HARD}。\n`,
     'utf-8',
   )
+  completeReview(root)
 }
 
 const 账本候选 = [
@@ -177,6 +193,7 @@ describe('合法候选入档后的真源沉淀(A3/A4)', () => {
     if (!initial.ok) throw new Error(initial.detail)
     const before = serializeDocument({ ...initial.data.fields, 版本: 3 }, initial.data.body)
     fs.writeFileSync(file, before, 'utf8')
+    completeReview(root)
     const approval = { 章节: key, 批准: true, 裁决记录: '测试作者批准事实更正' }
     preparePack(root, key, { 事实变更: '# 事实变更\n## 人物档案\n### 主角\n本章炭钱尚未到账，并非没有炭钱制度。\n' })
     expect(planSettlement(root, path.join(root, PKG), undefined, key, '更正').ok).toBe(false)

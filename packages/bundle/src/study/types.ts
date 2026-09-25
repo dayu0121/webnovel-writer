@@ -5,8 +5,12 @@ export interface FileRef {
 
 export interface StudyBook {
   readonly id: string
+  readonly kind: 'book' | 'story'
   readonly name: string
   readonly progress: string
+  readonly platform?: 'fanqie'
+  readonly platformProfile?: 'fanqie-short-story'
+  readonly rulePack?: { readonly id: string; readonly version: number; readonly hash: string }
   readonly error?: string
 }
 

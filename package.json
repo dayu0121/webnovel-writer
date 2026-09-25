@@ -2,8 +2,8 @@
   "name": "webnovel-writer-v8",
   "private": true,
   "type": "module",
-  "version": "0.1.0-preview.5",
-  "description": "DSH Scriptor: a long-form fiction writing workspace for DeepSeek Harness",
+  "version": "0.1.0-preview.6",
+  "description": "DSH Scriptor: a Fanqie short-story writing workspace for DeepSeek Harness, with legacy long-form compatibility",
   "packageManager": "pnpm@11.27.1",
   "scripts": {
     "prepare": "node tools/git-hooks/install.mjs || echo [git-hooks] skipped",

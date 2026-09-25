@@ -79,6 +79,9 @@ function mkWorkspace(): string {
     '---\n书id: test-book\n---\n\n# 作品契约\n\n测试书。\n',
     'utf-8',
   )
+  const packageDir = nodePath.join(book, '草稿区', '定稿准备', '卷01-第一章')
+  fs.mkdirSync(packageDir, { recursive: true })
+  fs.writeFileSync(nodePath.join(packageDir, '清单.json'), JSON.stringify({ schemaVersion: 1 }), 'utf-8')
   return ws
 }
 
@@ -158,8 +161,8 @@ describe('dsh 运行时对齐:主 Agent scoped 工具面', () => {
     const tools = (root as unknown as { get(n: string): unknown }).get('tools') as ToolRuntimeType
     const mainNames = schemasOf(tools, main.agent)
     for (const n of NOVEL_TOOL_NAMES) expect(mainNames).toContain(n)
-    expect(mainNames.filter((n) => n.startsWith('novel_'))).toHaveLength(NOVEL_TOOL_NAMES.length)
-    expect(schemasOf(tools, outsider.agent).filter((n) => n.startsWith('novel_'))).toEqual([])
+    expect(mainNames.filter((n) => NOVEL_TOOL_NAMES.includes(n))).toHaveLength(NOVEL_TOOL_NAMES.length)
+    expect(schemasOf(tools, outsider.agent).filter((n) => NOVEL_TOOL_NAMES.includes(n))).toEqual([])
     await disposeRoot(root)
   })
 

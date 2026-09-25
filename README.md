@@ -1,30 +1,35 @@
 # DSH Scriptor · Webnovel Writer v8
 
-基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的长篇小说写作工作台。把构想、设定、大纲、写章、审读、修改、定稿、记忆与导出放进一个能够暂停和继续的工作流程，作品以本地文件保存。
+基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的番茄短故事写作工作台，保留既有长篇书仓兼容读取。把构想、设定、大纲、写章、审读、修改、定稿、记忆与导出放进一个能够暂停和继续的工作流程，作品以本地文件保存。
 
-**开发预览版：0.1.0-preview.5。** Windows 首发；重要作品使用前请备份。模型服务由你配置，调用可能产生费用。
+**开发预览版：0.1.0-preview.6。** Windows 首发；重要作品使用前请备份。模型服务由你配置，调用可能产生费用。
 
-DSH Scriptor is a local-first fiction writing workspace for DeepSeek Harness. This is the v8 developer preview. Runtime prompts and skills are included; model services are configured by the user.
+DSH Scriptor is a local-first Fanqie short-story workspace for DeepSeek Harness, with legacy long-form compatibility. This is the v8 developer preview. Runtime prompts and skills are included; model services are configured by the user.
 
 ## 选择版本
 
 | 产品线 | 运行环境 | 入口 |
 | --- | --- | --- |
 | v6 | Claude Code 插件 | [v6 文档与安装](https://github.com/lingfengQAQ/webnovel-writer/tree/master) |
-| v8（本分支） | DeepSeek Harness 工作台 | [下载预览版](https://github.com/lingfengQAQ/webnovel-writer/releases/tag/scriptor-v0.1.0-preview.5) · [安装教程](docs/user/install.md) |
+| v8（本分支） | DeepSeek Harness 工作台 | [下载预览版](https://github.com/lingfengQAQ/webnovel-writer/releases/tag/scriptor-v0.1.0-preview.6) · [安装教程](docs/user/install.md) |
 
-两个版本安装方式不同。当前没有经过验证的 v6/v7 书仓直接迁移方案。`v8` 是产品线名称，`0.1.0-preview.5` 是工作台安装包版本。
+两个版本安装方式不同。当前没有经过验证的 v6/v7 书仓直接迁移方案。`v8` 是产品线名称，`0.1.0-preview.6` 是工作台安装包版本。
 
+## 短故事模式
+
+- 用 `story_*` 工具创建 `short-story-v1` 原生故事仓，以一篇完整故事代替卷章。
+- 走“故事卡与蓝图 → 整篇待审稿 → 全篇审读 → 处置/改稿 → 交付检查 → hash 绑定定稿”的短故事生产链。
+- 短故事进入同一书房书架、搜索和作品视图；导出 Markdown/TXT 时不生成伪卷章。
+- 短故事固定使用 `fanqie-short-story@1` 版本化规则包；来源、hash、公开篇幅口径和活动边界见 `docs/user/fanqie-rule-pack-v1.md`，不把活动规则冒充永久平台规则。
 ## 能做什么
 
-- 从灵感收敛到作品契约、世界书和卷章大纲。
-- 生成章节草稿，执行审读、修改与定稿流程；关键写入保留作者确认。
-- 从实际文件校准进度，暂停后继续，记录故事账本和本书记忆。
-- 在书房查看、编辑和引用材料，浏览章节、索引及关联信息。
-- 检索已定稿内容；可选安装嵌入/场景/重排提供方。
-- 生成卷摘要候选、核对卷末状态、导出定稿合集和来源清单。
+- 番茄短故事：作品卡、一页蓝图、整篇起草、三模块审读、处置、交付检查和 MD/TXT 导出。
+- 版本化规则：固定使用 `fanqie-short-story@1`，规则来源、hash、篇幅口径和活动边界可追溯。
+- 书房：查看短故事书架、目录树、只读真源和番茄进度板。
+- 长篇兼容：既有长篇书仓仍可读取、审读、恢复和导出，不作为新建入口。
+- 可选检索：安装嵌入/场景/重排提供方后增强已定稿内容检索。
 
-主包包含 10 个运行技能和 7 个脚本入口。嵌入提供方是独立可选包，基础写作无需先配置向量服务。模型创作质量、长篇一致性和费用会随模型与操作方式变化，不承诺无人值守完成整本书。
+主包包含 12 个运行技能（长篇兼容技能 10 个、番茄短故事技能 2 个）和 7 个脚本入口。嵌入提供方是独立可选包，基础写作无需先配置向量服务。模型创作质量、长篇一致性和费用会随模型与操作方式变化，不承诺无人值守完成整本书。
 
 ## 开始使用
 
@@ -33,7 +38,7 @@ DSH Scriptor is a local-first fiction writing workspace for DeepSeek Harness. Th
 3. 在宿主设置中配置主模型与凭据，阅读 [最小配置](docs/user/configuration.md)。
 4. 用 [合成练习素材](examples/first-book.md) 走一遍 [第一本书与第一章](docs/user/first-book.md)，熟悉确认、定稿和恢复。
 
-安装包不需要在用户电脑上编译，也不要求 npm 账号。Release 中的 `linfengqaqtat-dsh-scriptor-0.1.0-preview.5.tgz` 是本地安装备选，使用前核对 SHA256；源码压缩包用于开发。
+安装包不需要在用户电脑上编译，也不要求 npm 账号。Release 中的 `linfengqaqtat-dsh-scriptor-0.1.0-preview.6.tgz` 是本地安装备选，使用前核对 SHA256；源码压缩包用于开发。
 
 
 ### 可选嵌入提供方

@@ -20,10 +20,10 @@ export async function apply(ctx, config) {
     ctx.on('dispose', () => handle.dispose())
     const agent = handle.agent
     progress('tools and skills')
-    const tools = ctx.tools.schemas(agent).filter(tool => tool.name.startsWith('novel_'))
-    assert.equal(tools.length, config.installed ? 27 : 0)
+    const tools = ctx.tools.schemas(agent).filter(tool => tool.name.startsWith('novel_') || tool.name.startsWith('story_'))
+    assert.equal(tools.length, config.installed ? 40 : 0)
     const skills = (await ctx.skills.list({ cwd: config.workspace, scope: agent })).filter(skill => skill.provider === 'webnovel-bundled')
-    assert.equal(skills.length, config.installed ? 10 : 0)
+    assert.equal(skills.length, config.installed ? 12 : 0)
     report.tools = tools.length
     report.skills = []
     if (config.installed) {

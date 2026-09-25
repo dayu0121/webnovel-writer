@@ -5,7 +5,7 @@
  *   提交点跟随作者确认(2026-08-29 拍板 1/7),ch: 不带 Scope。
  */
 
-export const COMMIT_PREFIXES = ['ch', 'vol', 'design', 'retcon', 'fix'] as const
+export const COMMIT_PREFIXES = ['ch', 'vol', 'design', 'retcon', 'fix', 'story'] as const
 export type CommitPrefix = (typeof COMMIT_PREFIXES)[number]
 
 export interface CommitMessageInput {

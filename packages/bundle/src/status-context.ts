@@ -14,7 +14,7 @@ function sysPromptOf(ctx: Context): SystemPromptLike | undefined {
 /** 书架事实随请求现算；选书与近况由普通工具回复进入宿主对话。 */
 import { type Context } from '@deepseek-ai/cordis'
 import { scanBooks, type BookOverview } from './bookshelf'
-import { activeChapterLine, readAuthorMemoryCatalog, readBookMemoryCatalog, renderMemoryCatalog } from '@webnovel/core'
+import { activeChapterLine, deriveShortStoryState, listShortStories, readAuthorMemoryCatalog, readBookMemoryCatalog, renderMemoryCatalog } from '@webnovel/core'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import type { SessionSeq } from '@deepseek-ai/dsh-session'
@@ -25,19 +25,32 @@ export function renderOverview(
   bookIdOf: (book: BookOverview) => string | undefined = (b) => b.bookId,
 ): string {
   const books = scanBooks(workspaceRoot)
+  const stories = listShortStories(workspaceRoot)
   const lines: string[] = ['【工作区总览】', '']
-  if (books.length === 0) {
-    lines.push('目前还没有书。')
-    lines.push('- 新建一本书：先告诉我你的构想，我会陪你梳理作品构想。', '')
+  if (books.length === 0 && stories.length === 0) {
+    lines.push('目前还没有作品。')
+    lines.push('- 新建番茄短故事：先告诉我一句故事灵感，我会陪你整理作品卡与一页蓝图。', '')
   } else {
-    lines.push('书架里的书：')
-    for (const book of books) {
-      const id = bookIdOf(book) ?? '（无书id）'
-      lines.push(`- 《${book.name}》（书id：${id}）——继续写这本书`)
+    if (books.length > 0) {
+      lines.push('长篇小说：')
+      for (const book of books) {
+        const id = bookIdOf(book) ?? '（无书id）'
+        lines.push(`- 《${book.name}》（书id：${id}）——继续写这本书`)
+      }
+      lines.push('')
     }
-    lines.push('', '- 新建一本书：告诉我你的构想，我会陪你梳理作品构想。', '')
+    if (stories.length > 0) {
+      lines.push('番茄短故事：')
+      for (const story of stories) {
+        const state = deriveShortStoryState(story.root, story.storyId)
+        const progress = state.ok ? `${state.建议} · ${state.下一步}` : `状态异常：${state.reason}`
+        lines.push(`- 番茄短故事《${story.name}》（故事 id：${story.storyId}；规则包 v${story.rulePack.version}）——${progress}`)
+      }
+      lines.push('')
+    }
+    lines.push('- 新建番茄短故事：告诉我一句故事灵感。规则包与平台范围由工作台固定。', '')
   }
-  lines.push('沿用作者在本对话中指定的书；尚未明确书目时再询问。工具调用携带书id，继续写作前从书仓核对近况。')
+  lines.push('沿用作者在本对话中指定的作品；尚未明确作品时再询问。工具调用携带对应 id，继续写作前从真实文件核对近况。')
   return lines.join('\n')
 }
 

@@ -12,6 +12,7 @@ import * as nodePath from 'node:path'
 import * as os from 'node:os'
 import {
   archiveChapter,
+  applyRevision,
   archiveRetcon,
   paths,
   registerProposal,
@@ -25,7 +26,7 @@ import {
   confirmOutline,
   preparePack,
 } from '../src/index'
-import { runReview } from '@webnovel/review'
+import { ingestFindings, registerDefaultChecks, resetChecks, runReview } from '@webnovel/review'
 
 const roots: string[] = []
 function mkBook(withGit = true): string {
@@ -44,6 +45,17 @@ function mkBook(withGit = true): string {
 afterAll(() => { for (const r of roots) { try { fs.rmSync(r, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }) } catch { /* Windows 句柄延迟释放 */ } } })
 
 const key = { 卷: 1, 章: 1, 章名: '开篇任务' } as const
+function completeReview(root: string): void {
+  resetChecks()
+  registerDefaultChecks()
+  let record = runReview(root, key).record
+  for (const [name, state] of Object.entries(record?.模块 ?? {})) {
+    if (state.待回写 === true) record = ingestFindings(root, key, name, []).record
+  }
+  for (const finding of record?.问题 ?? []) {
+    if (finding.处置状态 === '待处理') applyRevision(root, key, { 发现项编号: finding.发现项编号, 处置: '作者保留' })
+  }
+}
 function git(cwd: string, args: readonly string[]): string {
   const r = spawnSync('git', args, { cwd, encoding: 'utf-8', windowsHide: true })
   return r.stdout ?? ''
@@ -74,8 +86,8 @@ function settledBook(root: string): void {
   const draftDir = nodePath.join(root, '草稿区/草稿/卷01-开篇任务')
   fs.mkdirSync(draftDir, { recursive: true })
   fs.writeFileSync(nodePath.join(draftDir, '稿1.md'), serializeDocument({ 角色: '待审稿', 选定: true }, '沈青梧走进城门，开场必须点名主角现身的规矩她记得清楚。'), 'utf-8')
-  const rr = runReview(root, key)
-  if (!rr.ok) throw new Error(`runReview failed:${rr.reason ?? ''}`)
+  completeReview(root)
+
   const p = preparePack(root, key)
   if (!p.ok) throw new Error(`preparePack failed:${p.reason ?? ''}`)
   const a = archiveChapter({ bookRoot: root, packageDir: nodePath.join(root, p.dir), summary: '第一章 开篇任务' })
